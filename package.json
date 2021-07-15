@@ -2,9 +2,9 @@
   "name": "pname",
   "version": "1.0.0",
   "description": "Cloudflare worker TypeScript template",
-  "main": "index.js",
+  "main": "./dist/worker.js",
   "scripts": {
-    "build": "webpack",
+    "build": "npm install && webpack",
     "dev": "NODE_ENV=development npm run build",
     "format": "prettier --write '**/*.{ts,js,css,json,md}'",
     "test:clean": "rimraf ./transpiled/src ./transpiled/test",
@@ -20,16 +20,17 @@
     "chai": "^4.2.0",
     "discord-api-types": "^0.18.1",
     "mocha": "^8.0.1",
+    "node-fetch": "^2.6.1",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2",
     "service-worker-mock": "^2.0.5",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.5",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.12"
+    "webpack": "^5.15.0",
+    "webpack-cli": "^4.3.1"
   },
   "dependencies": {
     "itty-router": "^2.3.10",
-    "noble-ed25519": "^1.2.3"
+    "noble-ed25519": "file:../noble-ed25519"
   }
 }
