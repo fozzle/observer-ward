@@ -1,3 +1,15 @@
+export interface ODotaWebhookPartial {
+  hook_id: string
+}
+
+export interface ODotaWebhook extends ODotaWebhookPartial {
+  subscriptions: {
+    players?: string[],
+    teams?: string[]
+  },
+  url: string
+}
+
 export interface Chat {
   time: number
   unit: string

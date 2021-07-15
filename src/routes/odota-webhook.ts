@@ -1,17 +1,10 @@
 import GAME_MODES from '../data/gamemodes'
 import HERO_MAP from '../data/heroes'
-import { Match, Player } from '../types/match'
+import { Match, Player } from '../types/odota'
+import { GuildConfig, PlayerConfig } from '../types/shared'
+import { USER_PREFIX } from './constants'
 
-interface PlayerConfig {
-  id: string
-  guilds: Record<string, { nickname?: string }>
-}
 
-interface GuildConfig {
-  id: string
-  channelId: string
-  // Maybe permissions here
-}
 
 const WIN_COLOR = parseInt('19e62d', 16)
 const LOSS_COLOR = parseInt('f10e16', 16)
@@ -22,19 +15,15 @@ function getOpenDotaMatchURL(matchId: string | number) {
 
 type PlayerInfo = { [accountId: number]: { nickname?: string } }
 async function collectPlayersByGuild(players: Player[]) {
-  const guildsToPlayers = {} as Record<string, PlayerInfo>
+  const guildsToPlayers = {} as Record<string, Set<string>>
   for (const { account_id: accountId } of players) {
-    const playerConfig = (await PLAYERS.get(String(accountId), 'json')) as
-      | PlayerConfig
-      | undefined
-    if (playerConfig != null) {
-      for (const guildId in playerConfig.guilds) {
-        const guildConfig = playerConfig.guilds[guildId]
-        const players = guildsToPlayers[guildId] ?? {}
-        players[accountId] = { nickname: guildConfig.nickname }
-        guildsToPlayers[guildId] = players
-      }
-    }
+    const playerKeys = await PLAYERS.list({prefix: USER_PREFIX(String(accountId))})
+    playerKeys.keys.map(({name}) => {
+      const [_, accountId, guildId] = name.split(':')
+      const players = guildsToPlayers[guildId] ?? new Set()
+      players.add(accountId)
+      guildsToPlayers[guildId] = players
+    })
   }
 
   return guildsToPlayers
@@ -42,7 +31,7 @@ async function collectPlayersByGuild(players: Player[]) {
 
 async function postMatchToGuilds(
   match: Match,
-  guildsToPlayers: Record<string, PlayerInfo>,
+  guildsToPlayers: Record<string, Set<string>>,
 ) {
   const { players } = match
 
@@ -54,7 +43,7 @@ async function postMatchToGuilds(
 
     const guildPlayers = guildsToPlayers[guildId]
     const knownPlayers = players.filter(
-      ({ account_id: accountId }) => guildPlayers[accountId] != null,
+      ({ account_id: accountId }) => guildPlayers.has(String(accountId)),
     )
 
     const playerTeams = {
@@ -62,7 +51,7 @@ async function postMatchToGuilds(
       dire: knownPlayers.filter(({ player_slot: slot }) => slot >= 5),
     }
 
-    postMatchToGuild(match, guildConfig, playerTeams, guildPlayers)
+    postMatchToGuild(match, guildConfig, playerTeams)
   }
 }
 
@@ -70,7 +59,6 @@ async function postMatchToGuild(
   match: Match,
   guildConfig: GuildConfig,
   teamPlayers: { [team: string]: Player[] },
-  guildPlayers: PlayerInfo,
 ) {
   const {
     radiant_win: radiantWin,
@@ -90,17 +78,17 @@ async function postMatchToGuild(
     const playersString = team
       .map(
         ({ name, account_id: accountId }) =>
-          guildPlayers[accountId]?.nickname ?? name,
+          guildConfig.users[accountId]?.alias ?? name,
       )
       .join(',')
     const playerFields = team.map(
       ({ name, kills, deaths, assists, account_id: accountId, hero_id: heroId }) => ({
-        name: guildPlayers[accountId]?.nickname ?? name,
+        name: guildConfig.users[accountId]?.alias ?? name,
         value: `${HERO_MAP[heroId]?.name ?? 'Unknown Hero'} - ${kills}/${deaths}/${assists}`,
       }),
     )
     // hit discord webhook w/ formatted data
-    const resp = await fetch(DISCORD_WEBHOOK_URL, {
+    await fetch(DISCORD_WEBHOOK_URL, {
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
@@ -139,7 +127,7 @@ async function postMatchToGuild(
 
 export default async function routeHandler(request: Request) {
   const requestSecret = new URL(request.url).searchParams.get('secret')
-  if (requestSecret !== WEBHOOK_SECRET) {
+  if (requestSecret !== OBSERVER_WARD_WEBHOOK_SECRET) {
     return new Response('Unauthorized', { status: 401 })
   }
 
