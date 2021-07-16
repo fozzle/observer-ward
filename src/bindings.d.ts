@@ -8,4 +8,5 @@ declare global {
     const DISCORD_PUBLIC_KEY: string;
     const ODOTA_SESSION: string;
     const ODOTA_SESSION_SIG: string;
+    const DISCORD_BOT_TOKEN: string;
 }

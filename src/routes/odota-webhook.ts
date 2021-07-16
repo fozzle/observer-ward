@@ -51,13 +51,13 @@ async function postMatchToGuild(
     const teamWon = teamName === 'radiant' ? radiantWin : !radiantWin
     const playersString = team
       .map(
-        ({ name, account_id: accountId }) =>
-        accountAlias(accountId) ?? name,
+        ({ personaname, name, account_id: accountId }) =>
+        accountAlias(accountId) ?? personaname ?? name,
       )
       .join(',')
     const playerFields = team.map(
-      ({ name, kills, deaths, assists, account_id: accountId, hero_id: heroId }) => ({
-        name: accountAlias(accountId) ?? name,
+      ({ personaname, name, kills, deaths, assists, account_id: accountId, hero_id: heroId }) => ({
+        name: accountAlias(accountId) ?? personaname ?? name,
         value: `${HERO_MAP[heroId]?.name ?? 'Unknown Hero'} - ${kills}/${deaths}/${assists}`,
       }),
     )
@@ -66,6 +66,7 @@ async function postMatchToGuild(
       method: 'post',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bot ${DISCORD_BOT_TOKEN}`
       },
       body: JSON.stringify({
         embeds: [
