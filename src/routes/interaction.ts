@@ -135,12 +135,11 @@ async function handleCommand(
 ): Promise<Response> {
   if (!data.hasOwnProperty('guild_id')) {
     return new Response('Cannot process commands outside of guild', {
-      status: 400,
+      status: 200,
     })
   }
 
   data = data as APIApplicationCommandGuildInteraction
-
   const commandData = data.data
   switch (commandData.name) {
     case SlashCommands.SUBSCRIBE_USER:
