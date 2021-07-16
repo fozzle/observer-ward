@@ -164,7 +164,6 @@ export default async function handleInteraction(
   try {
     await validateInteraction(request, rawBody)
   } catch (e) {
-    console.log('failed to validate', e.message)
     return new Response('Invalid signature', { status: 401 })
   }
 
