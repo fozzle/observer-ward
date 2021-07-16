@@ -4,9 +4,9 @@ import type {
   APIInteraction,
   ApplicationCommandInteractionDataOptionString,
 } from 'discord-api-types'
-import * as ed from 'noble-ed25519'
 import { susbcribeGuildToUser, unsubscribeGuildToUser } from '../odota/webhooks'
 import { GuildConfig } from '../types/shared'
+import hexToArrayBuffer from '../utils/hexToBuffer'
 import { USER_GUILD_KEY } from './constants'
 
 enum InteractionType {
@@ -28,12 +28,25 @@ function makeTextResponse(content: string) {
   )
 }
 
-// TODO: Hopefully cloudflare supports a native impl of Ed25519 soon
 async function validateInteraction(request: Request, rawBody: string) {
   const signature = request.headers.get('X-Signature-Ed25519')
   const timestamp = request.headers.get('X-Signature-Timestamp')
   const hash = encoder.encode(timestamp + rawBody)
-  const isVerified = await ed.verify(signature!, hash, DISCORD_PUBLIC_KEY)
+  const encodedKey = hexToArrayBuffer(DISCORD_PUBLIC_KEY)
+  const rawSignature = hexToArrayBuffer(signature!)
+  const publicKey = await crypto.subtle.importKey(
+    'raw',
+    encodedKey,
+    { name: 'NODE-ED25519', namedCurve: 'NODE-ED25519' },
+    false,
+    ['verify'],
+  )
+  const isVerified = await crypto.subtle.verify(
+    'NODE-ED25519',
+    publicKey,
+    rawSignature,
+    hash,
+  )
   if (!isVerified) throw new Error('Failed to verify')
 }
 
@@ -41,7 +54,7 @@ enum SlashCommands {
   SUBSCRIBE_USER = 'subscribe_user',
   UNSUBSCRIBE_USER = 'unsubscribe_user',
   LIST_USERS = 'list_users',
-  CONFIGURE_GUILD = 'configure_guild'
+  CONFIGURE_GUILD = 'configure_guild',
 }
 
 async function handleSubscribeUser(
@@ -85,7 +98,7 @@ async function handleListUsers(data: APIApplicationCommandGuildInteraction) {
   const guildId = data.guild_id
   const guildConfig = (await GUILDS.get(guildId, 'json')) as GuildConfig | null
   const playerIDList = guildConfig != null ? Object.keys(guildConfig.users) : []
-  const response =  makeTextResponse(`${playerIDList.length} found.
+  const response = makeTextResponse(`${playerIDList.length} found.
       \`\`\`
       ${JSON.stringify(playerIDList)}
       \`\`\``)
@@ -102,11 +115,14 @@ async function handleConfigureGuild(
       | undefined
   )?.value
   if (channelId == null) return makeTextResponse('Requires channel ID')
-  const guildConfig = ((await GUILDS.get(guildId, 'json')) as GuildConfig | null) ?? {
+  const guildConfig = ((await GUILDS.get(
+    guildId,
+    'json',
+  )) as GuildConfig | null) ?? {
     id: guildId as string,
     webhookId: '',
     channelId: channelId,
-    users: {}
+    users: {},
   }
   guildConfig.channelId = channelId
   await GUILDS.put(guildId, JSON.stringify(guildConfig))
