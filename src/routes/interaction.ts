@@ -83,12 +83,13 @@ async function handleUnsubscribeUser(
 
 async function handleListUsers(data: APIApplicationCommandGuildInteraction) {
   const guildId = data.guild_id
-  const guildConfig = (await GUILDS.get(guildId)) as GuildConfig | null
+  const guildConfig = (await GUILDS.get(guildId, 'json')) as GuildConfig | null
   const playerIDList = guildConfig != null ? Object.keys(guildConfig.users) : []
-  return makeTextResponse(`${playerIDList.length} found\n\n
+  const response =  makeTextResponse(`${playerIDList.length} found.
       \`\`\`
       ${JSON.stringify(playerIDList)}
       \`\`\``)
+  return response
 }
 
 async function handleConfigureGuild(

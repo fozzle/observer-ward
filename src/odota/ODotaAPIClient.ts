@@ -1,4 +1,5 @@
-import { ODotaWebhookPartial } from '../types/odota'
+import { ODotaWebhook, ODotaWebhookPartial } from '../types/odota'
+import fetchClient from './fetchClient'
 
 const WEBHOOK_API_BASE = 'https://api.opendota.com/webhooks'
 const OBSERVER_WARD_WEBHOOK_BASE = 'https://kylepetrovi.ch/dota/odota'
@@ -14,7 +15,8 @@ interface WebhookParams {
 }
 
 export async function createWebhook({ url, players }: WebhookParams) {
-  return await fetch(WEBHOOK_API_BASE, {
+  console.log('creating webhook', url, players)
+  return await fetchClient(WEBHOOK_API_BASE, {
     method: 'post',
     headers,
     body: JSON.stringify({
@@ -27,20 +29,16 @@ export async function createWebhook({ url, players }: WebhookParams) {
 }
 
 export async function getWebhooks() {
-  return (await (
-    await fetch(WEBHOOK_API_BASE, {
-      method: 'get',
-      headers,
-    })
-  ).json()) as ODotaWebhookPartial[]
+  return (await fetchClient(WEBHOOK_API_BASE, {
+    method: 'get',
+    headers,
+  })) as ODotaWebhookPartial[]
 }
 
 export async function getWebhook(webhookId: string) {
-  return await (
-    await fetch(`${WEBHOOK_API_BASE}/${webhookId}`, {
-      headers,
-    })
-  ).json()
+  return await fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
+    headers,
+  }) as ODotaWebhook
 }
 
 export async function updateWebhook(
@@ -48,7 +46,7 @@ export async function updateWebhook(
   { url, players }: WebhookParams,
 ) {
   // holy fck we have to get the subscriptions first
-  return fetch(`${WEBHOOK_API_BASE}/${webhookId}`, {
+  return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
     method: 'put',
     headers,
     body: JSON.stringify({
@@ -61,9 +59,8 @@ export async function updateWebhook(
 }
 
 export async function deleteWebhook(webhookId: string) {
-  return fetch(`${WEBHOOK_API_BASE}/${webhookId}`, {
+  return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
     method: 'delete',
     headers,
   })
 }
-
