@@ -134,9 +134,7 @@ async function handleCommand(
   data: APIApplicationCommandInteraction,
 ): Promise<Response> {
   if (!data.hasOwnProperty('guild_id')) {
-    return new Response('Cannot process commands outside of guild', {
-      status: 200,
-    })
+    return makeTextResponse('Cannot process commands outside of guild')
   }
 
   data = data as APIApplicationCommandGuildInteraction
@@ -151,7 +149,7 @@ async function handleCommand(
     case SlashCommands.CONFIGURE_GUILD:
       return handleConfigureGuild(data)
     default:
-      return new Response('Unknown command type', { status: 400 })
+      return makeTextResponse('Unknown command type')
   }
 }
 
