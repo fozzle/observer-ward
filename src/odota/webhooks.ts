@@ -15,7 +15,7 @@ async function createWebhookForGuild(guildId: string, accountId: string) {
     const candidate = await ODotaAPIClient.getWebhook(hookId)
     return candidate.url === webhookURL
   })
-
+  console.log('found target webhook', targetWebhook?.hook_id)
   return targetWebhook?.hook_id
 }
 
@@ -42,7 +42,7 @@ export async function susbcribeGuildToUser(
   alias?: string,
 ) {
   const guildConfig = (await GUILDS.get(guildId, 'json')) as GuildConfig | null
-  if (guildConfig == null) {
+  if (!guildConfig?.webhookId) {
     const webhookId = await createWebhookForGuild(guildId, accountId)
     await GUILDS.put(
       guildId,
@@ -55,10 +55,9 @@ export async function susbcribeGuildToUser(
     )
     return
   } else {
-    const newConfig = await addUserToGuildWebhook(guildConfig, accountId)
+    await addUserToGuildWebhook(guildConfig, accountId)
     guildConfig.users[accountId] = { alias }
   }
-
   await GUILDS.put(guildId, JSON.stringify(guildConfig))
 }
 
