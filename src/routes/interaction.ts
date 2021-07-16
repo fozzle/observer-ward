@@ -28,7 +28,6 @@ function makeTextResponse(content: string) {
   )
 }
 
-// TODO: Hopefully cloudflare supports a native impl of Ed25519 soon
 async function validateInteraction(request: Request, rawBody: string) {
   const signature = request.headers.get('X-Signature-Ed25519')
   const timestamp = request.headers.get('X-Signature-Timestamp')
