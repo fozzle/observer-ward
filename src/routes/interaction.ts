@@ -109,6 +109,11 @@ async function handleConfigureGuild(
   data: APIApplicationCommandGuildInteraction,
 ) {
   const guildId = data.guild_id
+  const memberPermissions = data.member.permissions
+  if (!(BigInt(memberPermissions) & BigInt(1 << 5))) {
+    return makeTextResponse('Must have Manage Server permission to configure this guild.')
+  }
+
   const channelId = (
     data.data.options?.find(({ name }) => name === 'channel_id') as
       | ApplicationCommandInteractionDataOptionString
