@@ -51,6 +51,7 @@ export async function susbcribeGuildToUser(
         users: {
           [accountId]: { alias },
         },
+        channelId: guildConfig?.channelId ?? ''
       }),
     )
     return
