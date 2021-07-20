@@ -7,6 +7,7 @@ export default async function fetchClient(...args: Parameters<typeof fetch>) {
     if (!response.ok) {
         try {
             const parsed = await response.json()
+            console.log('Failed request', response.status)
             throw new Error(JSON.stringify(parsed))
         } catch {
             throw new Error(`An unknown HTTP ${response.status} error occured on ${args[0]}`)

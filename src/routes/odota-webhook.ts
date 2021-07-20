@@ -61,6 +61,35 @@ async function postMatchToGuild(
         value: `${HERO_MAP[heroId]?.name ?? 'Unknown Hero'} - ${kills}/${deaths}/${assists}`,
       }),
     )
+    const payload = JSON.stringify({
+      embeds: [
+        {
+          title: `${playersString} ${
+            teamWon ? 'won' : 'lost'
+          } a game as ${teamName}`,
+          url: getOpenDotaMatchURL(matchId),
+          color: teamWon ? WIN_COLOR : LOSS_COLOR,
+          fields: [
+            {
+              name: 'Game Mode',
+              value: GAME_MODES[String(gameMode)].name,
+            },
+            {
+              name: 'Radiant Score',
+              value: radiantScore,
+              inline: true,
+            },
+            {
+              name: 'Dire Score',
+              value: direScore,
+              inline: true,
+            },
+            ...playerFields
+          ],
+        },
+      ],
+    })
+    console.log('POSTIN IT', payload)
     // hit discord webhook w/ formatted data
     await fetchClient(MESSAGE_ENDPOINT(guildConfig.channelId), {
       method: 'post',
@@ -68,34 +97,7 @@ async function postMatchToGuild(
         'Content-Type': 'application/json',
         'Authorization': `Bot ${DISCORD_BOT_TOKEN}`
       },
-      body: JSON.stringify({
-        embeds: [
-          {
-            title: `${playersString} ${
-              teamWon ? 'won' : 'lost'
-            } a game as ${teamName}`,
-            url: getOpenDotaMatchURL(matchId),
-            color: teamWon ? WIN_COLOR : LOSS_COLOR,
-            fields: [
-              {
-                name: 'Game Mode',
-                value: GAME_MODES[String(gameMode)].name,
-              },
-              {
-                name: 'Radiant Score',
-                value: radiantScore,
-                inline: true,
-              },
-              {
-                name: 'Dire Score',
-                value: direScore,
-                inline: true,
-              },
-              ...playerFields
-            ],
-          },
-        ],
-      }),
+      body: payload,
     })
   }
 }
@@ -108,31 +110,35 @@ export default async function routeHandler(request: Request) {
   }
   const requestGuildId = requestURL.searchParams.get('guildId')
   if (requestGuildId == null) {
+    console.log('missing guildid', requestGuildId)
     return new Response('Missing guildId', {status: 400})
   }
 
   const guildConfig = (await GUILDS.get(requestGuildId, 'json')) as GuildConfig | null
   if (guildConfig == null) {
+    console.log('guild config missing', requestGuildId)
     return new Response('Not found', {status: 404})
   }
 
   if (!guildConfig.channelId) {
     // Nothing to do here
+    console.log('no channelId configured')
     return new Response('Guild not configured', {status: 400})
   }
 
   let data = null
   try {
     data = (await request.json()) as Match
-    if (!data) throw new Error()
+    if (!data) throw new Error('No match data')
   } catch (e) {
+    console.log('failed to parse match data', e.message)
     return new Response('Invalid request', { status: 400 })
   }
 
   try {
     await postMatchToGuild(data, guildConfig)
   } catch (e) {
-    console.error('Error posting to guild', e)
+    console.error('Error posting to guild', e, e.message)
     return new Response('failed', {status: 500})
   }
 

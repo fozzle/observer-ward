@@ -32,7 +32,7 @@ async function removeUserFromGuildWebhook(
   accountId: string,
 ) {
   const webhookURL = GUILD_WEBHOOK_URL(guildConfig.id)
-  await ODotaAPIClient.updateWebhook(guildConfig.webhookId, {url: webhookURL, players: Object.keys(guildConfig.users).filter(id => id === accountId) })
+  await ODotaAPIClient.updateWebhook(guildConfig.webhookId, {url: webhookURL, players: Object.keys(guildConfig.users).filter(id => id !== accountId) })
 }
 
 // These operations needs to be replaced with durable objects.
