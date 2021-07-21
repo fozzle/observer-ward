@@ -52,13 +52,14 @@ async function postMatchToGuild(
     const playersString = team
       .map(
         ({ personaname, name, account_id: accountId }) =>
-        accountAlias(accountId) ?? personaname ?? name,
+        accountAlias(accountId) || personaname || name || `${accountId}`,
       )
-      .join(',')
+      .join(', ')
     const playerFields = team.map(
       ({ personaname, name, kills, deaths, assists, account_id: accountId, hero_id: heroId }) => ({
-        name: accountAlias(accountId) ?? personaname ?? name,
+        name: accountAlias(accountId) || personaname || name || `${accountId}`,
         value: `${HERO_MAP[heroId]?.name ?? 'Unknown Hero'} - ${kills}/${deaths}/${assists}`,
+        inline: true
       }),
     )
     const payload = JSON.stringify({
