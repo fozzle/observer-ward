@@ -21,6 +21,7 @@ async function postMatchToGuild(
   match: Match,
   guildConfig: GuildConfig,
 ) {
+  console.log('RECEIVED WEBHOOK', match)
   const {
     radiant_win: radiantWin,
     radiant_score: radiantScore,
