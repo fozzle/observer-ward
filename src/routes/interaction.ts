@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type {
   APIApplicationCommandGuildInteraction,
   APIApplicationCommandInteraction,
@@ -8,6 +9,8 @@ import { susbcribeGuildToUser, unsubscribeGuildToUser } from '../odota/webhooks'
 import { GuildConfig } from '../types/shared'
 import hexToArrayBuffer from '../utils/hexToBuffer'
 import { USER_GUILD_KEY } from './constants'
+import makeInteractionTextResponse from '../utils/makeInteractionTextResponse'
+import validateInteractionData from '../utils/validateInteractionData'
 
 enum InteractionType {
   Ping = 1,
@@ -15,18 +18,6 @@ enum InteractionType {
 }
 
 const encoder = new TextEncoder()
-
-function makeTextResponse(content: string) {
-  return new Response(
-    JSON.stringify({
-      type: 4,
-      data: {
-        content,
-      },
-    }),
-    { status: 200, headers: { 'content-type': 'application/json' } },
-  )
-}
 
 async function validateInteraction(request: Request, rawBody: string) {
   const signature = request.headers.get('X-Signature-Ed25519')
@@ -57,51 +48,39 @@ enum SlashCommands {
   CONFIGURE_GUILD = 'configure_guild',
 }
 
-async function handleSubscribeUser(
-  data: APIApplicationCommandGuildInteraction,
-) {
-  const accountId = (
-    data.data.options?.find(({ name }) => name === 'account_id') as
-      | ApplicationCommandInteractionDataOptionString
-      | undefined
-  )?.value
-  const nickname = (
-    data.data.options?.find(({ name }) => name === 'nickname') as
-      | ApplicationCommandInteractionDataOptionString
-      | undefined
-  )?.value
-  if (accountId == null)
-    return new Response('Missing account_id', { status: 400 })
-  const guildId = data.guild_id
-  await susbcribeGuildToUser(guildId, accountId, nickname)
-  PLAYERS.put(USER_GUILD_KEY(accountId, guildId), '')
-  return makeTextResponse(`Subscribed to ${accountId}`)
-}
+const Z_ACCOUNT_ID = z.string().regex(/d+/)
 
-async function handleUnsubscribeUser(
-  data: APIApplicationCommandGuildInteraction,
-) {
-  const accountId = (
-    data.data.options?.find(({ name }) => name === 'account_id') as
-      | ApplicationCommandInteractionDataOptionString
-      | undefined
-  )?.value
-  if (accountId == null)
-    return new Response('Missing account ID', { status: 400 })
-  const guildId = data.guild_id
-  await unsubscribeGuildToUser(guildId, accountId)
-  PLAYERS.delete(USER_GUILD_KEY(accountId, guildId))
-  return makeTextResponse(`Unsubscribed from ${accountId}`)
-}
+const handleSubscribeUser = validateInteractionData(
+  z.object({
+    account_id: Z_ACCOUNT_ID,
+    nickname: z.string().max(32),
+  }),
+  async ({account_id: accountId, nickname}, {guild_id: guildId}) => {
+    await susbcribeGuildToUser(guildId, accountId, nickname)
+    PLAYERS.put(USER_GUILD_KEY(accountId, guildId), '')
+    return makeInteractionTextResponse(`Subscribed to ${accountId}`)
+  },
+)
+
+const handleUnsubscribeUser = validateInteractionData(
+  z.object({
+    account_id: Z_ACCOUNT_ID,
+  }),
+  async ({account_id: accountId }, {guild_id: guildId}) => {
+    await unsubscribeGuildToUser(guildId, accountId)
+    PLAYERS.delete(USER_GUILD_KEY(accountId, guildId))
+    return makeInteractionTextResponse(`Unsubscribed from ${accountId}`)
+  }
+)
 
 async function handleListUsers(data: APIApplicationCommandGuildInteraction) {
   const guildId = data.guild_id
   const guildConfig = (await GUILDS.get(guildId, 'json')) as GuildConfig | null
   const playerIDList = guildConfig != null ? Object.keys(guildConfig.users) : []
-  const response = makeTextResponse(`${playerIDList.length} found.
-      \`\`\`
-      ${JSON.stringify(playerIDList)}
-      \`\`\``)
+  const response = makeInteractionTextResponse(`${playerIDList.length} found.
+\`\`\`
+${JSON.stringify(playerIDList)}
+\`\`\``)
   return response
 }
 
@@ -111,7 +90,9 @@ async function handleConfigureGuild(
   const guildId = data.guild_id
   const memberPermissions = data.member.permissions
   if (!(BigInt(memberPermissions) & BigInt(1 << 5))) {
-    return makeTextResponse('Must have Manage Server permission to configure this guild.')
+    return makeInteractionTextResponse(
+      'Must have Manage Server permission to configure this guild.',
+    )
   }
 
   const channelId = (
@@ -119,7 +100,8 @@ async function handleConfigureGuild(
       | ApplicationCommandInteractionDataOptionString
       | undefined
   )?.value
-  if (channelId == null) return makeTextResponse('Requires channel ID')
+  if (channelId == null)
+    return makeInteractionTextResponse('Requires channel ID')
   const guildConfig = ((await GUILDS.get(
     guildId,
     'json',
@@ -131,7 +113,7 @@ async function handleConfigureGuild(
   }
   guildConfig.channelId = channelId
   await GUILDS.put(guildId, JSON.stringify(guildConfig))
-  return makeTextResponse(`Guild information updated.`)
+  return makeInteractionTextResponse(`Guild information updated.`)
 }
 
 async function handleCommand(
@@ -139,7 +121,9 @@ async function handleCommand(
   data: APIApplicationCommandInteraction,
 ): Promise<Response> {
   if (!data.hasOwnProperty('guild_id')) {
-    return makeTextResponse('Cannot process commands outside of guild')
+    return makeInteractionTextResponse(
+      'Cannot process commands outside of guild',
+    )
   }
 
   data = data as APIApplicationCommandGuildInteraction
@@ -154,7 +138,7 @@ async function handleCommand(
     case SlashCommands.CONFIGURE_GUILD:
       return handleConfigureGuild(data)
     default:
-      return makeTextResponse('Unknown command type')
+      return makeInteractionTextResponse('Unknown command type')
   }
 }
 

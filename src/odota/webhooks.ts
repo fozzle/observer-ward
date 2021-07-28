@@ -32,7 +32,12 @@ async function removeUserFromGuildWebhook(
   accountId: string,
 ) {
   const webhookURL = GUILD_WEBHOOK_URL(guildConfig.id)
-  await ODotaAPIClient.updateWebhook(guildConfig.webhookId, {url: webhookURL, players: Object.keys(guildConfig.users).filter(id => id !== accountId) })
+  const newPlayers = Object.keys(guildConfig.users).filter(id => id !== accountId);
+  if (newPlayers.length === 0) {
+    return ODotaAPIClient.deleteWebhook(guildConfig.webhookId)
+  } else {
+    return ODotaAPIClient.updateWebhook(guildConfig.webhookId, {url: webhookURL, players: newPlayers })
+  }
 }
 
 // These operations needs to be replaced with durable objects.
@@ -67,5 +72,9 @@ export async function unsubscribeGuildToUser(guildId: string, accountId: string)
   if (guildConfig == null) return
   await removeUserFromGuildWebhook(guildConfig, accountId)
   delete guildConfig.users[accountId]
+  // We have deleted the webhook. It will need re-creating on next subscription
+  if (guildConfig.users.length === 0) {
+    guildConfig.webhookId = ""
+  }
   await GUILDS.put(guildId, JSON.stringify(guildConfig))
 }
