@@ -19,6 +19,7 @@ const COMMANDS = [
         name: 'nickname',
         description: 'A nickname for this account',
         type: 3,
+        required: true
       },
     ],
   },

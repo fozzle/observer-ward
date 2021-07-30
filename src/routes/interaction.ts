@@ -3,7 +3,6 @@ import type {
   APIApplicationCommandGuildInteraction,
   APIApplicationCommandInteraction,
   APIInteraction,
-  ApplicationCommandInteractionDataOptionString,
 } from 'discord-api-types'
 import { susbcribeGuildToUser, unsubscribeGuildToUser } from '../odota/webhooks'
 import { GuildConfig } from '../types/shared'
@@ -48,14 +47,16 @@ enum SlashCommands {
   CONFIGURE_GUILD = 'configure_guild',
 }
 
-const Z_ACCOUNT_ID = z.string().regex(/d+/)
+const Z_ACCOUNT_ID = z.string().regex(/\d+/)
+const Z_DISCORD_SNOWFLAKE = z.string().regex(/\d+/)
 
 const handleSubscribeUser = validateInteractionData(
   z.object({
     account_id: Z_ACCOUNT_ID,
     nickname: z.string().max(32),
   }),
-  async ({account_id: accountId, nickname}, {guild_id: guildId}) => {
+  async ({ account_id: accountId, nickname }, { guild_id: guildId }) => {
+    console.log('nickname', nickname)
     await susbcribeGuildToUser(guildId, accountId, nickname)
     PLAYERS.put(USER_GUILD_KEY(accountId, guildId), '')
     return makeInteractionTextResponse(`Subscribed to ${accountId}`)
@@ -66,55 +67,58 @@ const handleUnsubscribeUser = validateInteractionData(
   z.object({
     account_id: Z_ACCOUNT_ID,
   }),
-  async ({account_id: accountId }, {guild_id: guildId}) => {
+  async ({ account_id: accountId }, { guild_id: guildId }) => {
     await unsubscribeGuildToUser(guildId, accountId)
     PLAYERS.delete(USER_GUILD_KEY(accountId, guildId))
     return makeInteractionTextResponse(`Unsubscribed from ${accountId}`)
-  }
+  },
 )
 
-async function handleListUsers(data: APIApplicationCommandGuildInteraction) {
-  const guildId = data.guild_id
-  const guildConfig = (await GUILDS.get(guildId, 'json')) as GuildConfig | null
-  const playerIDList = guildConfig != null ? Object.keys(guildConfig.users) : []
-  const response = makeInteractionTextResponse(`${playerIDList.length} found.
+const handleListUsers = validateInteractionData(
+  z.object({}),
+  async ({}, { guild_id: guildId }) => {
+    const guildConfig = (await GUILDS.get(
+      guildId,
+      'json',
+    )) as GuildConfig | null
+    const playerIDList =
+      guildConfig != null ? Object.keys(guildConfig.users) : []
+    const response = makeInteractionTextResponse(`${playerIDList.length} found.
 \`\`\`
 ${JSON.stringify(playerIDList)}
 \`\`\``)
-  return response
-}
+    return response
+  },
+)
 
-async function handleConfigureGuild(
-  data: APIApplicationCommandGuildInteraction,
-) {
-  const guildId = data.guild_id
-  const memberPermissions = data.member.permissions
-  if (!(BigInt(memberPermissions) & BigInt(1 << 5))) {
-    return makeInteractionTextResponse(
-      'Must have Manage Server permission to configure this guild.',
-    )
-  }
+const handleConfigureGuild = validateInteractionData(
+  z.object({
+    channel_id: Z_DISCORD_SNOWFLAKE,
+  }),
+  async (
+    { channel_id: channelId },
+    { guild_id: guildId, member: { permissions } },
+  ) => {
+    if (!(BigInt(permissions) & BigInt(1 << 5))) {
+      return makeInteractionTextResponse(
+        'Must have Manage Server permission to configure this guild.',
+      )
+    }
 
-  const channelId = (
-    data.data.options?.find(({ name }) => name === 'channel_id') as
-      | ApplicationCommandInteractionDataOptionString
-      | undefined
-  )?.value
-  if (channelId == null)
-    return makeInteractionTextResponse('Requires channel ID')
-  const guildConfig = ((await GUILDS.get(
-    guildId,
-    'json',
-  )) as GuildConfig | null) ?? {
-    id: guildId as string,
-    webhookId: '',
-    channelId: channelId,
-    users: {},
-  }
-  guildConfig.channelId = channelId
-  await GUILDS.put(guildId, JSON.stringify(guildConfig))
-  return makeInteractionTextResponse(`Guild information updated.`)
-}
+    const guildConfig = ((await GUILDS.get(
+      guildId,
+      'json',
+    )) as GuildConfig | null) ?? {
+      id: guildId as string,
+      webhookId: '',
+      channelId: channelId,
+      users: {},
+    }
+    guildConfig.channelId = channelId
+    await GUILDS.put(guildId, JSON.stringify(guildConfig))
+    return makeInteractionTextResponse(`Guild information updated.`)
+  },
+)
 
 async function handleCommand(
   request: Request,
