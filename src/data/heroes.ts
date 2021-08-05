@@ -1,4 +1,4 @@
-const HERO_MAP: Record<string, {id: number, name: string}> = {
+const HERO_MAP: Record<string, { id: number; name: string }> = {
   '1': {
     id: 1,
 

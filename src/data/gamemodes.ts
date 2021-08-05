@@ -1,4 +1,7 @@
-const GAME_MODES: Record<string, {id: number, name: string, balanced?: boolean}> = {
+const GAME_MODES: Record<
+  string,
+  { id: number; name: string; balanced?: boolean }
+> = {
   '0': { id: 0, name: 'Unknown', balanced: true },
   '1': { id: 1, name: 'All Pick', balanced: true },
   '2': { id: 2, name: 'Captains Mode', balanced: true },

@@ -1,9 +1,10 @@
+name = "observer-ward"
 type = "javascript"
-zone_id = "31dea2e3e5ae934dd42318d435be55c7"
 account_id = "8f8eea48fc5a7f0009e0e5569fcced9c"
+zone_id = "31dea2e3e5ae934dd42318d435be55c7"
 route = "https://kylepetrovi.ch/dota*"
 workers_dev = true
-name = "observer-ward"
+
 kv_namespaces = [
   { binding = "PLAYERS", id = "378d095572724a6db9810bfe810d524f" },
   { binding = "GUILDS", id = "bc290482eeb14698a9efd1e490f9a287" }
@@ -12,4 +13,10 @@ kv_namespaces = [
 [build]
 command = "npm install && npm run build"
 [build.upload]
-format = "service-worker"
+format = "modules"
+main = "./index.mjs"
+
+[durable_objects]
+bindings = [
+  { name = "GUILD_DURABLE_OBJECTS", class_name = "GuildObject" }
+]

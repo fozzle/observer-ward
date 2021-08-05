@@ -4,12 +4,11 @@ import type {
   APIApplicationCommandInteraction,
   APIInteraction,
 } from 'discord-api-types'
-import { susbcribeGuildToUser, unsubscribeGuildToUser } from '../odota/webhooks'
-import { GuildConfig } from '../types/shared'
 import hexToArrayBuffer from '../utils/hexToBuffer'
-import { USER_GUILD_KEY } from './constants'
 import makeInteractionTextResponse from '../utils/makeInteractionTextResponse'
 import validateInteractionData from '../utils/validateInteractionData'
+import requestToGuildObject from '../utils/requestToGuildObject'
+import { WorkerEnvironment } from '../types/environment'
 
 enum InteractionType {
   Ping = 1,
@@ -18,11 +17,15 @@ enum InteractionType {
 
 const encoder = new TextEncoder()
 
-async function validateInteraction(request: Request, rawBody: string) {
+async function validateInteraction(
+  request: Request,
+  rawBody: string,
+  discordPublicKey: string,
+) {
   const signature = request.headers.get('X-Signature-Ed25519')
   const timestamp = request.headers.get('X-Signature-Timestamp')
   const hash = encoder.encode(timestamp + rawBody)
-  const encodedKey = hexToArrayBuffer(DISCORD_PUBLIC_KEY)
+  const encodedKey = hexToArrayBuffer(discordPublicKey)
   const rawSignature = hexToArrayBuffer(signature!)
   const publicKey = await crypto.subtle.importKey(
     'raw',
@@ -40,11 +43,12 @@ async function validateInteraction(request: Request, rawBody: string) {
   if (!isVerified) throw new Error('Failed to verify')
 }
 
-enum SlashCommands {
+export enum SlashCommands {
   SUBSCRIBE_USER = 'subscribe_user',
   UNSUBSCRIBE_USER = 'unsubscribe_user',
   LIST_USERS = 'list_users',
   CONFIGURE_GUILD = 'configure_guild',
+  RESET_GUILD = 'reset_guild',
 }
 
 const Z_ACCOUNT_ID = z.string().regex(/\d+/)
@@ -55,11 +59,16 @@ const handleSubscribeUser = validateInteractionData(
     account_id: Z_ACCOUNT_ID,
     nickname: z.string().max(32),
   }),
-  async ({ account_id: accountId, nickname }, { guild_id: guildId }) => {
-    console.log('nickname', nickname)
-    await susbcribeGuildToUser(guildId, accountId, nickname)
-    PLAYERS.put(USER_GUILD_KEY(accountId, guildId), '')
-    return makeInteractionTextResponse(`Subscribed to ${accountId}`)
+  async ({ account_id: accountId, nickname }, { guild_id: guildId }, env) => {
+    return requestToGuildObject(
+      guildId,
+      {
+        method: SlashCommands.SUBSCRIBE_USER,
+        userId: accountId,
+        nickname,
+      },
+      env.GUILD_DURABLE_OBJECTS,
+    )
   },
 )
 
@@ -67,27 +76,26 @@ const handleUnsubscribeUser = validateInteractionData(
   z.object({
     account_id: Z_ACCOUNT_ID,
   }),
-  async ({ account_id: accountId }, { guild_id: guildId }) => {
-    await unsubscribeGuildToUser(guildId, accountId)
-    PLAYERS.delete(USER_GUILD_KEY(accountId, guildId))
-    return makeInteractionTextResponse(`Unsubscribed from ${accountId}`)
+  async ({ account_id: accountId }, { guild_id: guildId }, env) => {
+    return requestToGuildObject(
+      guildId,
+      {
+        method: SlashCommands.UNSUBSCRIBE_USER,
+        userId: accountId,
+      },
+      env.GUILD_DURABLE_OBJECTS,
+    )
   },
 )
 
 const handleListUsers = validateInteractionData(
   z.object({}),
-  async ({}, { guild_id: guildId }) => {
-    const guildConfig = (await GUILDS.get(
+  async ({}, { guild_id: guildId }, env) => {
+    return requestToGuildObject(
       guildId,
-      'json',
-    )) as GuildConfig | null
-    const playerIDList =
-      guildConfig != null ? Object.keys(guildConfig.users) : []
-    const response = makeInteractionTextResponse(`${playerIDList.length} found.
-\`\`\`
-${JSON.stringify(playerIDList)}
-\`\`\``)
-    return response
+      { method: SlashCommands.LIST_USERS },
+      env.GUILD_DURABLE_OBJECTS,
+    )
   },
 )
 
@@ -98,6 +106,7 @@ const handleConfigureGuild = validateInteractionData(
   async (
     { channel_id: channelId },
     { guild_id: guildId, member: { permissions } },
+    env,
   ) => {
     if (!(BigInt(permissions) & BigInt(1 << 5))) {
       return makeInteractionTextResponse(
@@ -105,24 +114,35 @@ const handleConfigureGuild = validateInteractionData(
       )
     }
 
-    const guildConfig = ((await GUILDS.get(
+    return requestToGuildObject(
       guildId,
-      'json',
-    )) as GuildConfig | null) ?? {
-      id: guildId as string,
-      webhookId: '',
-      channelId: channelId,
-      users: {},
+      { method: SlashCommands.CONFIGURE_GUILD, channelId },
+      env.GUILD_DURABLE_OBJECTS,
+    )
+  },
+)
+
+const handleResetGuild = validateInteractionData(
+  z.object({}),
+  async ({}, { guild_id: guildId, member: { permissions } }, env) => {
+    if (!(BigInt(permissions) & BigInt(1 << 5))) {
+      return makeInteractionTextResponse(
+        'Must have Manage Server permission to configure this guild.',
+      )
     }
-    guildConfig.channelId = channelId
-    await GUILDS.put(guildId, JSON.stringify(guildConfig))
-    return makeInteractionTextResponse(`Guild information updated.`)
+
+    return requestToGuildObject(
+      guildId,
+      { method: SlashCommands.RESET_GUILD },
+      env.GUILD_DURABLE_OBJECTS,
+    )
   },
 )
 
 async function handleCommand(
   request: Request,
   data: APIApplicationCommandInteraction,
+  env: WorkerEnvironment,
 ): Promise<Response> {
   if (!data.hasOwnProperty('guild_id')) {
     return makeInteractionTextResponse(
@@ -134,13 +154,15 @@ async function handleCommand(
   const commandData = data.data
   switch (commandData.name) {
     case SlashCommands.SUBSCRIBE_USER:
-      return handleSubscribeUser(data)
+      return handleSubscribeUser(data, env)
     case SlashCommands.UNSUBSCRIBE_USER:
-      return handleUnsubscribeUser(data)
+      return handleUnsubscribeUser(data, env)
     case SlashCommands.LIST_USERS:
-      return handleListUsers(data)
+      return handleListUsers(data, env)
     case SlashCommands.CONFIGURE_GUILD:
-      return handleConfigureGuild(data)
+      return handleConfigureGuild(data, env)
+    case SlashCommands.RESET_GUILD:
+      return handleResetGuild(data, env)
     default:
       return makeInteractionTextResponse('Unknown command type')
   }
@@ -148,10 +170,11 @@ async function handleCommand(
 
 export default async function handleInteraction(
   request: Request,
+  env: WorkerEnvironment,
 ): Promise<Response> {
   const rawBody = await request.text()
   try {
-    await validateInteraction(request, rawBody)
+    await validateInteraction(request, rawBody, env.DISCORD_PUBLIC_KEY)
   } catch (e) {
     return new Response('Invalid signature', { status: 401 })
   }
@@ -167,7 +190,11 @@ export default async function handleInteraction(
     case InteractionType.Ping:
       return new Response(JSON.stringify({ type: InteractionType.Ping }))
     case InteractionType.ApplicationCommand:
-      return handleCommand(request, data as APIApplicationCommandInteraction)
+      return handleCommand(
+        request,
+        data as APIApplicationCommandInteraction,
+        env,
+      )
     default:
       return new Response('Unknown interaction type', { status: 400 })
   }

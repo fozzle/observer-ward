@@ -1,5 +1,6 @@
 import { APIApplicationCommandGuildInteraction } from 'discord-api-types'
 import { objectOutputType, z, ZodObject, ZodRawShape, ZodTypeAny } from 'zod'
+import { WorkerEnvironment } from '../types/environment'
 import makeInteractionTextResponse from './makeInteractionTextResponse'
 
 function extractData(
@@ -17,9 +18,16 @@ function extractData(
 
 export default function validateInteractionData<T extends ZodRawShape>(
   schema: ZodObject<T>,
-  handler: (data: objectOutputType<T, ZodTypeAny>, raw: APIApplicationCommandGuildInteraction) => Promise<Response>,
-): (data: APIApplicationCommandGuildInteraction) => Promise<Response> {
-  return async (data: APIApplicationCommandGuildInteraction) => {
+  handler: (
+    data: objectOutputType<T, ZodTypeAny>,
+    raw: APIApplicationCommandGuildInteraction,
+    env: WorkerEnvironment,
+  ) => Promise<Response>,
+): (
+  data: APIApplicationCommandGuildInteraction,
+  env: WorkerEnvironment,
+) => Promise<Response> {
+  return async (data, env) => {
     const extractedData = extractData(schema, data)
     let parsedData
     try {
@@ -28,6 +36,6 @@ export default function validateInteractionData<T extends ZodRawShape>(
       // Make parse error response
       return makeInteractionTextResponse(e.message, true)
     }
-    return handler(parsedData, data)
+    return handler(parsedData, data, env)
   }
 }

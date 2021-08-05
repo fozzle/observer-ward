@@ -1,66 +1,74 @@
+import { string } from 'zod'
 import { ODotaWebhook, ODotaWebhookPartial } from '../types/odota'
 import fetchClient from './fetchClient'
 
 const WEBHOOK_API_BASE = 'https://api.opendota.com/webhooks'
-const OBSERVER_WARD_WEBHOOK_BASE = 'https://kylepetrovi.ch/dota/odota'
-
-const headers = {
-  cookie: `session=${ODOTA_SESSION}; session.sig=${ODOTA_SESSION_SIG}`,
-  'content-type': 'application/json',
-}
 
 interface WebhookParams {
   url: string
   players: string[]
 }
 
-export async function createWebhook({ url, players }: WebhookParams) {
-  console.log('creating webhook', url, players)
-  return await fetchClient(WEBHOOK_API_BASE, {
-    method: 'post',
-    headers,
-    body: JSON.stringify({
-      url,
-      subscriptions: {
-        players,
-      },
-    }),
-  })
-}
+export default class ODotaAPIClient {
+  ODOTA_SESSION: string
+  ODOTA_SESSION_SIG: string
+  constructor(session: string, signature: string) {
+    this.ODOTA_SESSION = session
+    this.ODOTA_SESSION_SIG = signature
+  }
 
-export async function getWebhooks() {
-  return (await fetchClient(WEBHOOK_API_BASE, {
-    method: 'get',
-    headers,
-  })) as ODotaWebhookPartial[]
-}
+  get headers() {
+    return {
+      cookie: `session=${this.ODOTA_SESSION}; session.sig=${this.ODOTA_SESSION_SIG}`,
+      'content-type': 'application/json',
+    }
+  }
 
-export async function getWebhook(webhookId: string) {
-  return await fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
-    headers,
-  }) as ODotaWebhook
-}
+  async createWebhook({ url, players }: WebhookParams) {
+    console.log('creating webhook', url, players)
+    return await fetchClient(WEBHOOK_API_BASE, {
+      method: 'post',
+      headers: this.headers,
+      body: JSON.stringify({
+        url,
+        subscriptions: {
+          players,
+        },
+      }),
+    })
+  }
 
-export async function updateWebhook(
-  webhookId: string,
-  { url, players }: WebhookParams,
-) {
-  // holy fck we have to get the subscriptions first
-  return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
-    method: 'put',
-    headers,
-    body: JSON.stringify({
-      url,
-      subscriptions: {
-        players,
-      },
-    }),
-  })
-}
+  async getWebhooks() {
+    return (await fetchClient(WEBHOOK_API_BASE, {
+      method: 'get',
+      headers: this.headers,
+    })) as ODotaWebhookPartial[]
+  }
 
-export async function deleteWebhook(webhookId: string) {
-  return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
-    method: 'delete',
-    headers,
-  })
+  async getWebhook(webhookId: string) {
+    return (await fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
+      headers: this.headers,
+    })) as ODotaWebhook
+  }
+
+  async updateWebhook(webhookId: string, { url, players }: WebhookParams) {
+    // holy fck we have to get the subscriptions first
+    return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
+      method: 'put',
+      headers: this.headers,
+      body: JSON.stringify({
+        url,
+        subscriptions: {
+          players,
+        },
+      }),
+    })
+  }
+
+  async deleteWebhook(webhookId: string) {
+    return fetchClient(`${WEBHOOK_API_BASE}/${webhookId}`, {
+      method: 'delete',
+      headers: this.headers,
+    })
+  }
 }

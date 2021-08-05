@@ -51,6 +51,10 @@ const COMMANDS = [
       },
     ],
   },
+  {
+    name: 'reset_guild',
+    description: 'Remove all players, clear all webhooks. Use to get out of a bad spot.'
+  }
 ]
 
 async function syncCommands() {
