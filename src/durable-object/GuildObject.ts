@@ -180,11 +180,9 @@ export class GuildObject implements DurableObject {
   async getUsers() {
     const playerList = Object.entries(this.users)
     return makeInteractionTextResponse(`${playerList.length} found.
-    \`\`\`
-    ${playerList.map(([accountId, { alias }]) => {
+    \`\`\`${playerList.map(([accountId, { alias }]) => {
       return `${accountId}: ${alias}`
-    }).join('\n')}
-    \`\`\``)
+    }).join('\n')}\`\`\``)
   }
 
   async postMatchToGuild(match: Match) {
