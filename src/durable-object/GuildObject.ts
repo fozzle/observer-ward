@@ -182,8 +182,8 @@ export class GuildObject implements DurableObject {
     return makeInteractionTextResponse(`${playerList.length} found.
     \`\`\`
     ${playerList.map(([accountId, { alias }]) => {
-      ;`${accountId}: ${alias}\n`
-    })}
+      return `${accountId}: ${alias}`
+    }).join('\n')}
     \`\`\``)
   }
 
