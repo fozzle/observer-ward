@@ -1,31 +1,55 @@
 <html>
-
-<head>
+  <head>
     <link rel="stylesheet" href="style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto&display=swap" rel="stylesheet">
-</head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-<body>
+  <body>
     <div class="headerRoot">
-        <h1>Observer Ward</h1>
-        <h3>A DOTA 2 bot for Discord</h3>
+      <h1>Observer Ward</h1>
+      <h3>A DOTA 2 bot for Discord</h3>
     </div>
 
     <main>
-        <p>
-            Observer Ward is a Discord bot that posts match results when certain players finish a DOTA 2 game. You can
-            subscribe
-            to 20 players at any given time.
-        </p>
-        <p>
-            <a
-                href="https://discord.com/oauth2/authorize?client_id=850250497138491422&permissions=2048&scope=bot%20applications.commands">
-                <h3>Add To Your Server</h3>
-            </a>
-        </p>
+      <h3 class="sectionHeader">Commands</h3>
+      <div class="commandContainer">
+        <div class="commandCard">
+          <h4 class="commandHeader">Configure</h4>
+          <p class="monospace">/configure &lt;channelId&gt;</p>
+          <p>Tell Observer Ward where you want to post game results.</p>
+        </div>
+        <div class="commandCard">
+          <h4 class="commandHeader">Subscribe Players</h4>
+            <p class="monospace">/subscribe &lt;dotaID&gt; &lt;nickname&gt;</p>
+            <p>Tell Observer Ward which players to follow, and what to call them. When followed players finish a DOTA2 game, the results will be posted to the configured channel.</p>
+        </div>
+        <div class="commandCard">
+            <h4 class="commandHeader">Unsubscribe Players</h4>
+            <p class="monospace">/unsubscribe &lt;dotaID&gt;</p>
+            <p>
+              Made a mistake? Not interested anymore? Unsubscribe a from a players updates with this command.
+            </p>
+          </div>
+          <div class="commandCard">
+            <h4 class="commandHeader">List Players</h4>
+            <p class="monospace">/list_players</p>
+            <p>
+                See who the bot is following.
+            </p>
+          </div>
+      </div>
+      <p>
+        <a
+          href="https://discord.com/oauth2/authorize?client_id=850250497138491422&permissions=2048&scope=bot%20applications.commands"
+        >
+          <button class="ctaButton">Add To Discord Server</button>
+        </a>
+      </p>
     </main>
-</body>
-
+  </body>
 </html>
