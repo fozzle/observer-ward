@@ -6,7 +6,8 @@
   "main": "./dist/worker.js",
   "scripts": {
     "build": "rollup -c",
-    "format": "prettier --write '**/*.ts'"
+    "format": "prettier --write '**/*.ts'",
+    "devstatic": "http-server ./static"
   },
   "author": "Kyle Petrovich",
   "license": "MIT",
@@ -19,6 +20,7 @@
     "@types/mocha": "^7.0.2",
     "chai": "^4.2.0",
     "discord-api-types": "^0.18.1",
+    "http-server": "^13.0.2",
     "mocha": "^8.0.1",
     "node-fetch": "^2.6.1",
     "prettier": "^2.0.5",
