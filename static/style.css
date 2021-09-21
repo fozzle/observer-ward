@@ -1,0 +1,34 @@
+.headerRoot {
+    direction: column;
+    text-align: center;
+    padding: 24px;
+    background-color: #E48F55;
+    color: #E9ECE9;
+    font-family: 'Bebas Neue', cursive;
+    font-stretch: expanded;
+}
+
+.headerRoot > h1 {
+    font-size: 72px;
+}
+
+.headerRoot > h3 {
+    font-family: 'Roboto', sans-serif;
+}
+
+html, body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    color: #675E54;
+    background-color: #E9ECE9;
+    padding: 0;
+    font-size: 20px;
+}
+
+main {
+    padding: 24px;
+}
+
+a {
+    color: #7D8EA2;
+}
