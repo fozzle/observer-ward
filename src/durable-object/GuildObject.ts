@@ -46,12 +46,10 @@ export type GuildObjectRequest =
 
 export class GuildObject implements DurableObject {
   state: DurableObjectState
-  //@ts-expect-error
-  users: Record<string, PlayerConfig>
+  users: Record<string, PlayerConfig> = {}
   webhookId?: string
   channelId?: string
-  //@ts-expect-error
-  guildId: string
+  guildId: string = ""
   initializePromise?: Promise<void>
   env: WorkerEnvironment
   apiClient: ODotaAPIClient
@@ -140,6 +138,10 @@ export class GuildObject implements DurableObject {
   }
 
   async subscribe(userId: string, nickname: string) {
+    if (Object.keys(this.users).length >= 20) {
+      return makeInteractionTextResponse(`Failed to subscribe to ${userId}, at max limit.`)
+    }
+
     this.users[userId] = { alias: nickname }
     if (!this.webhookId) {
       this.webhookId = await this.createWebhookForGuild(this.guildId!, userId)
@@ -224,7 +226,6 @@ export class GuildObject implements DurableObject {
       const candidate = await this.apiClient.getWebhook(hookId)
       return candidate.url === webhookURL
     })
-    console.log('found target webhook', targetWebhook?.hook_id)
     return targetWebhook?.hook_id
   }
 
