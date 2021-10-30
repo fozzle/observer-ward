@@ -28,7 +28,7 @@ export interface WorkerEnvironment {
 
 `npm run devstatic` will serve the static website.
 
-Honestly I would just make a staging environment. I have not run this locally so I don't know how well it works.
+Honestly I would just make a staging environment. I have not run this locally so I don't know how well the wrangler local development works.
 
 ## Deploying
 
