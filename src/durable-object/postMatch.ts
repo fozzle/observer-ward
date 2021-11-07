@@ -3,22 +3,7 @@ import HERO_MAP from '../data/heroes'
 import fetchClient from '../utils/fetchClient'
 import { Match, Player } from '../types/odota'
 import { PlayerConfig } from '../types/shared'
-import {
-  LOSS_COLOR,
-  MESSAGE_ENDPOINT,
-  OPEN_DOTA_MATCH_URL,
-  WIN_COLOR,
-} from './constants'
-
-function getHeroEmojiString(heroId: number | string): string {
-  const heroEmoji = HERO_MAP[heroId]?.emoji
-  if (!heroEmoji) return ''
-  return `<${heroEmoji}>`
-}
-
-function getHeroName(heroId: number | string): string {
-  return HERO_MAP[heroId]?.name ?? 'Unknown Hero'
-}
+import { LOSS_COLOR, MESSAGE_ENDPOINT, OPEN_DOTA_MATCH_URL, WIN_COLOR } from './constants'
 
 export default async function postMatch(
   match: Match,
@@ -71,8 +56,8 @@ export default async function postMatch(
         hero_id: heroId,
       }) => ({
         name: accountAlias(accountId) || personaname || name || `${accountId}`,
-        value: `${getHeroEmojiString(heroId)}${
-          getHeroName(heroId)
+        value: `${
+          HERO_MAP[heroId]?.name ?? 'Unknown Hero'
         } - ${kills}/${deaths}/${assists}`,
         inline: true,
       }),
