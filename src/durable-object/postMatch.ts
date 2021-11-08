@@ -13,7 +13,8 @@ import {
 function getHeroEmojiString(heroId: number | string): string {
   const heroEmoji = HERO_MAP[heroId]?.emoji
   if (!heroEmoji) return ''
-  return `<${heroEmoji}>`
+  // Extra space to pad out hero name
+  return `<${heroEmoji}> `
 }
 
 function getHeroName(heroId: number | string): string {
