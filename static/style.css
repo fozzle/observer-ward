@@ -1,6 +1,5 @@
-@font-face {
-    font-family: 'OPTIwtcGoudy';
-    src: url('OPTIwtcGoudy-Medium.otf');
+button {
+  font-family: 'Roboto', sans-serif;
 }
 
 html, body {
