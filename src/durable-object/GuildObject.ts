@@ -7,6 +7,8 @@ import postMatch from './postMatch'
 import { WorkerEnvironment } from '../types/environment'
 import { GUILD_WEBHOOK_URL } from './constants'
 
+const MAX_SUBSCRIBED_USERS = 20;
+
 enum StorageKeys {
   USERS = 'users',
   WEBHOOK_ID = 'webhookId',
@@ -139,7 +141,7 @@ export class GuildObject implements DurableObject {
   }
 
   async subscribe(userId: string, nickname: string) {
-    if (Object.keys(this.users).length >= 20) {
+    if (Object.keys(this.users).length >= MAX_SUBSCRIBED_USERS) {
       return makeInteractionTextResponse(`Failed to subscribe to ${userId}, at max limit.`)
     }
 

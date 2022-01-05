@@ -95,6 +95,10 @@ button:hover {
   align-items: center;
 }
 
+.centered {
+  justify-content: center;
+}
+
 .sectionDescription {
   color: black;
   margin: 20px;
