@@ -7,4 +7,5 @@ export interface WorkerEnvironment {
   DISCORD_BOT_TOKEN: string
   GUILD_DURABLE_OBJECTS: DurableObjectNamespace
   STEAM_WEB_API_KEY: string
+  SENTRY_DSN: string
 }

@@ -606,6 +606,7 @@ const HERO_MAP: Record<string, { id: number; emoji?: string; name: string }> = {
   },
   '136': {
     id: 136,
+    emoji: ':dota_hero_marci:936029253470924901',
     name: 'Marci',
   },
 }
