@@ -34,7 +34,7 @@ export default class ODotaAPIClient {
           players,
         },
       }),
-    }) as ODotaWebhookPartial)
+    })) as ODotaWebhookPartial
   }
 
   async getWebhooks() {

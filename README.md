@@ -19,6 +19,7 @@ export interface WorkerEnvironment {
   ODOTA_SESSION_SIG: string // ODota session token signature (for interacting w/ webhook URL)
   DISCORD_BOT_TOKEN: string // Discord bot token
   STEAM_WEB_API_KEY: string // Steam web API key (used for verifying valid steam accounts)
+  SENTRY_DSN: string // Sentry DSN for exception logging
 }
 ```
 

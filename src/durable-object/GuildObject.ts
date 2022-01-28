@@ -6,8 +6,9 @@ import { Match } from '../types/odota'
 import postMatch from './postMatch'
 import { WorkerEnvironment } from '../types/environment'
 import { GUILD_WEBHOOK_URL } from './constants'
+import Toucan from 'toucan-js'
 
-const MAX_SUBSCRIBED_USERS = 20;
+const MAX_SUBSCRIBED_USERS = 20
 
 enum StorageKeys {
   USERS = 'users',
@@ -51,7 +52,7 @@ export class GuildObject implements DurableObject {
   users: Record<string, PlayerConfig> = {}
   webhookId?: string
   channelId?: string
-  guildId: string = ""
+  guildId: string = ''
   initializePromise?: Promise<void>
   env: WorkerEnvironment
   apiClient: ODotaAPIClient
@@ -78,6 +79,11 @@ export class GuildObject implements DurableObject {
   }
 
   async fetch(request: Request) {
+    const sentry = new Toucan({
+      dsn: this.env.SENTRY_DSN,
+      request,
+    })
+
     const guildId = request.headers.get('guildId')
     if (guildId == null) {
       return new Response('Bad request, missing guildId header')
@@ -91,22 +97,46 @@ export class GuildObject implements DurableObject {
 
     switch (requestBody.method) {
       case SlashCommands.SUBSCRIBE_USER:
+        sentry.addBreadcrumb({
+          message: 'SUBSCRIBE_USER Durable Object Request',
+          category: 'log',
+        })
         return this.subscribe(requestBody.userId, requestBody.nickname)
       case SlashCommands.UNSUBSCRIBE_USER:
-        return this.unsubscribe(requestBody.userId)
+        sentry.addBreadcrumb({
+          message: 'UNSUBSCRIBE_USER Durable Object Request',
+          category: 'log',
+        })
+        return this.unsubscribe(sentry, requestBody.userId)
       case SlashCommands.LIST_USERS:
+        sentry.addBreadcrumb({
+          message: 'LIST_USERS Durable Object Request',
+          category: 'log',
+        })
         return this.getUsers()
       case SlashCommands.CONFIGURE_GUILD:
+        sentry.addBreadcrumb({
+          message: 'CONFIGURE_GUILD Durable Object Request',
+          category: 'log',
+        })
         return this.configure(requestBody.channelId)
       case SlashCommands.RESET_GUILD:
+        sentry.addBreadcrumb({
+          message: 'RESET_GUILD Durable Object Request',
+          category: 'log',
+        })
         return this.reset()
       case 'post_webhook':
+        sentry.addBreadcrumb({
+          message: 'POST_WEBHOOK Durable Object Request',
+          category: 'log',
+        })
         return this.postMatchToGuild(requestBody.matchData)
     }
   }
 
   // HANDLERS
-  async unsubscribe(userId: string) {
+  async unsubscribe(sentry: Toucan, userId: string) {
     const webhookId = this.webhookId
     if (!webhookId) {
       return makeInteractionTextResponse('Missing webhookId?', true)
@@ -132,7 +162,8 @@ export class GuildObject implements DurableObject {
 
       delete this.users[userId]
     } catch (e) {
-      console.error('Failed to unsubscribe', e.message)
+      // Consider letting this error bubble up instead of handling here
+      sentry.captureException(e)
       return makeInteractionTextResponse('Failed to unsubscribe', true)
     }
 
@@ -142,7 +173,9 @@ export class GuildObject implements DurableObject {
 
   async subscribe(userId: string, nickname: string) {
     if (Object.keys(this.users).length >= MAX_SUBSCRIBED_USERS) {
-      return makeInteractionTextResponse(`Failed to subscribe to ${userId}, at max limit.`)
+      return makeInteractionTextResponse(
+        `Failed to subscribe to ${userId}, at max limit.`,
+      )
     }
 
     this.users[userId] = { alias: nickname }
@@ -185,9 +218,11 @@ export class GuildObject implements DurableObject {
   async getUsers() {
     const playerList = Object.entries(this.users)
     return makeInteractionTextResponse(`${playerList.length} found.
-    \`\`\`\n${playerList.map(([accountId, { alias }]) => {
-      return `${accountId}: ${alias}`
-    }).join('\n')}\`\`\``)
+    \`\`\`\n${playerList
+      .map(([accountId, { alias }]) => {
+        return `${accountId}: ${alias}`
+      })
+      .join('\n')}\`\`\``)
   }
 
   async postMatchToGuild(match: Match) {
@@ -196,17 +231,13 @@ export class GuildObject implements DurableObject {
       return new Response('ok', { status: 200 })
     }
 
-    try {
-      await postMatch(
-        match,
-        this.users,
-        this.channelId,
-        this.env.DISCORD_BOT_TOKEN,
-      )
-    } catch (e) {
-      console.error('Error posting to guild', e, e.message)
-      return new Response('failed', { status: 500 })
-    }
+    // Allow failure, will be caught at upper level
+    await postMatch(
+      match,
+      this.users,
+      this.channelId,
+      this.env.DISCORD_BOT_TOKEN,
+    )
 
     return new Response('ok', { status: 200 })
   }
@@ -218,11 +249,11 @@ export class GuildObject implements DurableObject {
       guildId,
       this.env.OBSERVER_WARD_WEBHOOK_SECRET,
     )
-    const {hook_id: hookId} = await this.apiClient.createWebhook({
+    const { hook_id: hookId } = await this.apiClient.createWebhook({
       url: webhookURL,
       players: [accountId],
     })
-    
+
     return hookId
   }
 

@@ -6,6 +6,7 @@
   "main": "./dist/worker.js",
   "scripts": {
     "build": "rollup -c",
+    "tsc-check": "tsc --noEmit",
     "format": "prettier --write '**/*.ts'",
     "devstatic": "http-server ./static"
   },
@@ -31,6 +32,7 @@
   },
   "dependencies": {
     "itty-router": "^2.3.10",
+    "toucan-js": "^2.5.0",
     "zod": "^3.5.1"
   }
 }
