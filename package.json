@@ -6,6 +6,7 @@
   "main": "./dist/worker.js",
   "scripts": {
     "build": "rollup -c",
+    "tsc-check": "tsc --noEmit",
     "format": "prettier --write '**/*.ts'",
     "devstatic": "http-server ./static"
   },
