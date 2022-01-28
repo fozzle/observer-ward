@@ -23,7 +23,7 @@ export default {
       dsn: env.SENTRY_DSN,
       context,
       request,
-    });
+    })
 
     try {
       return await router.handle(request, env, context)
@@ -31,7 +31,7 @@ export default {
       sentry.captureException(err)
       return new Response('Something went wrong', {
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
       })
     }
   },

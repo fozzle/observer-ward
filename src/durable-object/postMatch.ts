@@ -72,9 +72,9 @@ export default async function postMatch(
         hero_id: heroId,
       }) => ({
         name: accountAlias(accountId) || personaname || name || `${accountId}`,
-        value: `${getHeroEmojiString(heroId)}${
-          getHeroName(heroId)
-        } - ${kills}/${deaths}/${assists}`,
+        value: `${getHeroEmojiString(heroId)}${getHeroName(
+          heroId,
+        )} - ${kills}/${deaths}/${assists}`,
         inline: true,
       }),
     )

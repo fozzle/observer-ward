@@ -1,5 +1,8 @@
-export const GUILD_WEBHOOK_URL = (baseURL: string, guildId: string, secret: string) =>
-  `${baseURL}?guildId=${guildId}&secret=${secret}`
+export const GUILD_WEBHOOK_URL = (
+  baseURL: string,
+  guildId: string,
+  secret: string,
+) => `${baseURL}?guildId=${guildId}&secret=${secret}`
 
 export const MESSAGE_ENDPOINT = (channelId: string) =>
   `https://discord.com/api/channels/${channelId}/messages`

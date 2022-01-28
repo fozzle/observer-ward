@@ -14,6 +14,7 @@ export async function steamAccountExists(
   const url = new URL(`${STEAM_API_BASE}/ISteamUser/GetPlayerSummaries/v2`)
   url.searchParams.set('key', apiKey)
   url.searchParams.set('steamids', steam32To64(id).toString())
-  const results: {response: {players: Array<{personaname: string}>}} = await fetchClient(url.toString())
+  const results: { response: { players: Array<{ personaname: string }> } } =
+    await fetchClient(url.toString())
   return results.response.players.length > 0
 }

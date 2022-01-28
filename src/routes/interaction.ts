@@ -67,7 +67,7 @@ const handleSubscribeUser = validateInteractionData(
         true,
       )
     }
-    
+
     return requestToGuildObject(
       guildId,
       {
