@@ -613,6 +613,11 @@ const HERO_MAP: Record<string, { id: number; emoji?: string; name: string }> = {
     id: 137,
     emoji: ':dota_hero_primal_beast:1007802344043446294',
     name: 'Primal Beast'
+  },
+  '138': {
+    id: 138,
+    emoji: ':dota_hero_muerta:1170448168509521920',
+    name: 'Muerta'
   }
 }
 
