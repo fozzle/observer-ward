@@ -9,6 +9,7 @@ import {
   OPEN_DOTA_MATCH_URL,
   WIN_COLOR,
 } from './constants'
+import { DotaMatch } from '../types/steam'
 
 function getHeroEmojiString(heroId: number | string): string {
   const heroEmoji = HERO_MAP[heroId]?.emoji
@@ -22,7 +23,7 @@ function getHeroName(heroId: number | string): string {
 }
 
 export default async function postMatch(
-  match: Match,
+  match: DotaMatch,
   users: Record<string, PlayerConfig>,
   channelId: string,
   botToken: string,

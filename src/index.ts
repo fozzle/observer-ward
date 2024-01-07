@@ -1,19 +1,18 @@
 import { Router } from 'itty-router'
-import handleODotaWebhook from './routes/odota-webhook'
 import handleInteraction from './routes/interaction'
 import Toucan from 'toucan-js'
 import { WorkerEnvironment } from './types/environment'
 import { Context } from 'toucan-js/dist/types'
+import requestToFetcherObject from './utils/requestToFetcherObject'
 export { GuildObject } from './durable-object/GuildObject'
+export { MatchFetcherObject } from './durable-object/MatchFetcherObject'
 
 const router = Router()
 
 // Deprecated routes
-router.post('/dota/odota', handleODotaWebhook)
 router.post('/dota/interaction', handleInteraction)
 
 // New routes
-router.post('/api/odota', handleODotaWebhook)
 router.post('/api/interaction', handleInteraction)
 router.all('*', () => new Response('Not found.', { status: 404 }))
 
@@ -34,5 +33,9 @@ export default {
         statusText: 'Internal Server Error',
       })
     }
+  },
+
+  async scheduled(event: ScheduledEvent, env: WorkerEnvironment, ctx: Context) {
+    ctx.waitUntil(requestToFetcherObject({method: 'kick'}, env.MATCH_FETCHER_DURABLE_OBJECTS));
   },
 }

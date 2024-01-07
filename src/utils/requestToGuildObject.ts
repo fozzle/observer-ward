@@ -15,7 +15,7 @@ export default function requestToGuildObject(
   objectNamespace: DurableObjectNamespace,
 ) {
   const object = getDurableObjectForGuild(guildId, objectNamespace)
-  return object.fetch('https://example.com', {
+  return object.fetch('https://guildobject.com', {
     method: 'post',
     body: JSON.stringify(payload),
     headers: {

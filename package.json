@@ -13,7 +13,7 @@
   "author": "Kyle Petrovich",
   "license": "MIT",
   "devDependencies": {
-    "@cloudflare/workers-types": "^2.0.0",
+    "@cloudflare/workers-types": "^4.0.0",
     "@rollup/plugin-commonjs": "^20.0.0",
     "@rollup/plugin-node-resolve": "^13.0.4",
     "@rollup/plugin-typescript": "^8.2.5",
@@ -28,7 +28,8 @@
     "rollup-plugin-terser": "^7.0.2",
     "service-worker-mock": "^2.0.5",
     "ts-loader": "^7.0.5",
-    "typescript": "^4.3.5"
+    "typescript": "^4.3.5",
+    "wrangler": "^3.22.1"
   },
   "dependencies": {
     "itty-router": "^2.3.10",

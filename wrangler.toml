@@ -1,9 +1,9 @@
 name = "observer-ward"
-type = "javascript"
 account_id = "8f8eea48fc5a7f0009e0e5569fcced9c"
-zone_id = "31dea2e3e5ae934dd42318d435be55c7"
 workers_dev = true
 compatibility_date = "2023-11-04"
+compatibility_flags = ["durable_object_alarms"]
+main = "dist/index.mjs"
 
 kv_namespaces = [
   { binding = "PLAYERS", id = "378d095572724a6db9810bfe810d524f" },
@@ -12,11 +12,17 @@ kv_namespaces = [
 
 [build]
 command = "npm install && npm run build"
-[build.upload]
-format = "modules"
-main = "./index.mjs"
 
 [durable_objects]
 bindings = [
-  { name = "GUILD_DURABLE_OBJECTS", class_name = "GuildObject" }
+  { name = "GUILD_DURABLE_OBJECTS", class_name = "GuildObject" },
+  { name = "MATCH_FETCHER_DURABLE_OBJECTS", class_name = "MatchFetcherObject" }
 ]
+
+[vars]
+POLL_WAIT_MS = 5000
+MIN_SEQUENCE_NUM = 6335012040
+
+[[migrations]]
+tag = "v1"
+new_classes = ["MatchFetcherObject"]

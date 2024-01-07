@@ -1,24 +1,21 @@
 import { SlashCommands } from '../routes/interaction'
 import { PlayerConfig } from '../types/shared'
-import ODotaAPIClient from '../odota/ODotaAPIClient'
 import makeInteractionTextResponse from '../utils/makeInteractionTextResponse'
-import { Match } from '../types/odota'
+import requestToFetcherObject from '../utils/requestToFetcherObject'
 import postMatch from './postMatch'
 import { WorkerEnvironment } from '../types/environment'
-import { GUILD_WEBHOOK_URL } from './constants'
 import Toucan from 'toucan-js'
+import { DotaMatch } from '../types/steam'
 
 const MAX_SUBSCRIBED_USERS = 20
 
 enum StorageKeys {
   USERS = 'users',
-  WEBHOOK_ID = 'webhookId',
   CHANNEL_ID = 'channelId',
 }
 
 declare class MapConfig {
   get(key: StorageKeys.USERS): Record<string, PlayerConfig> | undefined
-  get(key: StorageKeys.WEBHOOK_ID): string | undefined
   get(key: StorageKeys.CHANNEL_ID): string | undefined
 }
 
@@ -44,37 +41,31 @@ export type GuildObjectRequest =
     }
   | {
       method: 'post_webhook'
-      matchData: Match
+      matchData: DotaMatch
     }
 
 export class GuildObject implements DurableObject {
   state: DurableObjectState
   users: Record<string, PlayerConfig> = {}
-  webhookId?: string
   channelId?: string
   guildId: string = ''
   initializePromise?: Promise<void>
   env: WorkerEnvironment
-  apiClient: ODotaAPIClient
 
   constructor(state: DurableObjectState, env: WorkerEnvironment) {
     this.state = state
     this.env = env
-    this.apiClient = new ODotaAPIClient(
-      env.ODOTA_SESSION,
-      env.ODOTA_SESSION_SIG,
-    )
+    this.state.blockConcurrencyWhile(async () => {
+      const values = (await this.state.storage.get([
+        StorageKeys.USERS,
+        StorageKeys.CHANNEL_ID,
+      ])) as MapConfig
+      this.users = values.get(StorageKeys.USERS) ?? {}
+      this.channelId = values.get(StorageKeys.CHANNEL_ID)
+    })
   }
 
   async initialize(guildId: string) {
-    const values = (await this.state.storage.get([
-      StorageKeys.USERS,
-      StorageKeys.WEBHOOK_ID,
-      StorageKeys.CHANNEL_ID,
-    ])) as MapConfig
-    this.users = values.get(StorageKeys.USERS) ?? {}
-    this.webhookId = values.get(StorageKeys.WEBHOOK_ID)
-    this.channelId = values.get(StorageKeys.CHANNEL_ID)
     this.guildId = guildId
   }
 
@@ -137,28 +128,11 @@ export class GuildObject implements DurableObject {
 
   // HANDLERS
   async unsubscribe(sentry: Toucan, userId: string) {
-    const webhookId = this.webhookId
-    if (!webhookId) {
-      return makeInteractionTextResponse('Missing webhookId?', true)
-    }
-
-    const webhookURL = GUILD_WEBHOOK_URL(
-      this.env.OBSERVER_WARD_WEBHOOK_BASE,
-      this.guildId,
-      this.env.OBSERVER_WARD_WEBHOOK_SECRET,
-    )
-    const newPlayers = Object.keys(this.users).filter((id) => id !== userId)
     try {
-      if (newPlayers.length === 0) {
-        await this.apiClient.deleteWebhook(webhookId)
-        this.webhookId = ''
-        this.state.storage.put(StorageKeys.WEBHOOK_ID, this.webhookId)
-      } else {
-        this.apiClient.updateWebhook(webhookId, {
-          url: webhookURL,
-          players: newPlayers,
-        })
-      }
+      requestToFetcherObject(
+        { method: 'unsubscribe_user', guildId: this.guildId, userId },
+        this.env.MATCH_FETCHER_DURABLE_OBJECTS,
+      )
 
       delete this.users[userId]
     } catch (e) {
@@ -179,17 +153,10 @@ export class GuildObject implements DurableObject {
     }
 
     this.users[userId] = { alias: nickname }
-    if (!this.webhookId) {
-      this.webhookId = await this.createWebhookForGuild(this.guildId!, userId)
-      this.state.storage.put(StorageKeys.WEBHOOK_ID, this.webhookId)
-    } else {
-      this.addUserToGuildWebhook(
-        this.users,
-        this.webhookId,
-        this.guildId!,
-        userId,
-      )
-    }
+    requestToFetcherObject(
+      { method: 'subscribe_user', guildId: this.guildId, userId },
+      this.env.MATCH_FETCHER_DURABLE_OBJECTS,
+    )
     this.state.storage.put(StorageKeys.USERS, this.users)
     return makeInteractionTextResponse(`Subscribed to ${userId} as ${nickname}`)
   }
@@ -203,15 +170,16 @@ export class GuildObject implements DurableObject {
   }
 
   async reset() {
-    this.channelId = ''
-    if (this.webhookId) {
-      this.apiClient.deleteWebhook(this.webhookId)
+    for (const userId of Object.keys(this.users)) {
+      await requestToFetcherObject(
+        { method: 'unsubscribe_user', guildId: this.guildId, userId },
+        this.env.MATCH_FETCHER_DURABLE_OBJECTS,
+      )
     }
-    this.webhookId = ''
+    this.channelId = ''
     this.users = {}
-    this.state.storage.put(StorageKeys.CHANNEL_ID, this.channelId)
-    this.state.storage.put(StorageKeys.USERS, this.users)
-    this.state.storage.put(StorageKeys.WEBHOOK_ID, this.webhookId)
+    await this.state.storage.put(StorageKeys.CHANNEL_ID, this.channelId)
+    await this.state.storage.put(StorageKeys.USERS, this.users)
     return makeInteractionTextResponse(`Reset complete.`)
   }
 
@@ -225,7 +193,7 @@ export class GuildObject implements DurableObject {
       .join('\n')}\`\`\``)
   }
 
-  async postMatchToGuild(match: Match) {
+  async postMatchToGuild(match: DotaMatch) {
     if (!this.channelId) {
       console.warn(`no channelID configured for guild ${this.guildId}`)
       return new Response('ok', { status: 200 })
@@ -240,37 +208,5 @@ export class GuildObject implements DurableObject {
     )
 
     return new Response('ok', { status: 200 })
-  }
-
-  // Helpers
-  async createWebhookForGuild(guildId: string, accountId: string) {
-    const webhookURL = GUILD_WEBHOOK_URL(
-      this.env.OBSERVER_WARD_WEBHOOK_BASE,
-      guildId,
-      this.env.OBSERVER_WARD_WEBHOOK_SECRET,
-    )
-    const { hook_id: hookId } = await this.apiClient.createWebhook({
-      url: webhookURL,
-      players: [accountId],
-    })
-
-    return hookId
-  }
-
-  async addUserToGuildWebhook(
-    users: Record<string, PlayerConfig>,
-    webhookId: string,
-    guildId: string,
-    accountId: string,
-  ) {
-    const webhookURL = GUILD_WEBHOOK_URL(
-      this.env.OBSERVER_WARD_WEBHOOK_BASE,
-      guildId,
-      this.env.OBSERVER_WARD_WEBHOOK_SECRET,
-    )
-    await this.apiClient.updateWebhook(webhookId, {
-      url: webhookURL,
-      players: Object.keys(users).concat(accountId),
-    })
   }
 }
