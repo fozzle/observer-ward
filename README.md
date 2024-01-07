@@ -12,7 +12,6 @@ There are also a bunch of environment variables expected to be defined on the wo
 
 ```
 export interface WorkerEnvironment {
-  OBSERVER_WARD_WEBHOOK_SECRET: string // An arbitrary secret string to use with your ODotA webhooks
   DISCORD_PUBLIC_KEY: string // Your Discord interaction public key
   DISCORD_BOT_TOKEN: string // Discord bot token
   STEAM_WEB_API_KEY: string // Steam web API key (used for verifying valid steam accounts)
