@@ -1,6 +1,6 @@
 # Observer Ward
 
-A Discord bot that posts about DOTA2.
+A Discord bot that posts about when players you subscribe to complete a game of DOTA2.
 
 ## Setup
 
@@ -13,10 +13,7 @@ There are also a bunch of environment variables expected to be defined on the wo
 ```
 export interface WorkerEnvironment {
   OBSERVER_WARD_WEBHOOK_SECRET: string // An arbitrary secret string to use with your ODotA webhooks
-  OBSERVER_WARD_WEBHOOK_BASE: string // The URL for inbound webhooks from ODotA 
   DISCORD_PUBLIC_KEY: string // Your Discord interaction public key
-  ODOTA_SESSION: string // ODota session token (for interacting w/ webhook URL)
-  ODOTA_SESSION_SIG: string // ODota session token signature (for interacting w/ webhook URL)
   DISCORD_BOT_TOKEN: string // Discord bot token
   STEAM_WEB_API_KEY: string // Steam web API key (used for verifying valid steam accounts)
   SENTRY_DSN: string // Sentry DSN for exception logging
