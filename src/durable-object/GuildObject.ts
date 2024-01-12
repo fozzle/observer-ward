@@ -6,8 +6,9 @@ import postMatch from './postMatch'
 import { WorkerEnvironment } from '../types/environment'
 import Toucan from 'toucan-js'
 import { DotaMatch } from '../types/steam'
+import { MAX_SUBSCRIBED_USERS } from './constants'
 
-const MAX_SUBSCRIBED_USERS = 20
+
 
 enum StorageKeys {
   USERS = 'users',

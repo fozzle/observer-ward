@@ -85,12 +85,14 @@
           />
         </div>
         <div class="sectionDescription">
-          <span class="sectionTitle">Opt-In Only</span>
-          <p>
-            Players must add themselves to the bot for their results to be
-            tracked, so participation is not required from every user in your
-            server.
-          </p>
+          <span class="sectionTitle">Commands</span>
+          <ul class="commandList">
+            <li><span>/configure_guild &lt;channel_id&gt;</span> - Set the channel to post match results to.</li>
+            <li><span>/subscribe_user &lt;steam_id&gt; &lt;nickname&gt;</span> - Subscribes to a user's matches, aliased to a provided nickname</li>
+            <li><span>/unsubscribe_user &lt;steam_id&gt;</span> - Unsubscribe's from a user's matches.</li>
+            <li><span>/list_users</span> - List all users currently subscribed to.</li>
+            <li><span>/reset_guild</span> - Clear all subscriptions and settings for this server.</li>
+          </ul>
         </div>
       </div>
       <div class="section centered">

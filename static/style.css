@@ -102,7 +102,6 @@ button:hover {
 .sectionDescription {
   color: black;
   margin: 20px;
-  max-height: 200px;
   width: 300px;
   border-radius: 4px;
   padding: 16px;
@@ -128,6 +127,11 @@ button:hover {
   font-size: 24px;
   display: block;
   text-align: center;
+}
+
+.commandList span {
+  font-family: monospace;
+  background: #f2cc8f;
 }
 
 @media (max-width: 1000px) {

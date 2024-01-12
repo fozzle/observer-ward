@@ -9,3 +9,5 @@ export function OPEN_DOTA_MATCH_URL(matchId: string | number) {
 }
 
 export const MATCH_SEQUENCE_API_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistoryBySequenceNum/v1'
+
+export const MAX_SUBSCRIBED_USERS = 15
