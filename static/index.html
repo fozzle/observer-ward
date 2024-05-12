@@ -87,11 +87,25 @@
         <div class="sectionDescription">
           <span class="sectionTitle">Commands</span>
           <ul class="commandList">
-            <li><span>/configure_guild &lt;channel_id&gt;</span> - Set the channel to post match results to.</li>
-            <li><span>/subscribe_user &lt;steam_id&gt; &lt;nickname&gt;</span> - Subscribes to a user's matches, aliased to a provided nickname</li>
-            <li><span>/unsubscribe_user &lt;steam_id&gt;</span> - Unsubscribe's from a user's matches.</li>
-            <li><span>/list_users</span> - List all users currently subscribed to.</li>
-            <li><span>/reset_guild</span> - Clear all subscriptions and settings for this server.</li>
+            <li>
+              <span>/configure_guild &lt;channel_id&gt;</span> - Set the channel
+              to post match results to.
+            </li>
+            <li>
+              <span>/subscribe_user &lt;steam_id&gt; &lt;nickname&gt;</span> -
+              Subscribes to a user's matches, aliased to a provided nickname
+            </li>
+            <li>
+              <span>/unsubscribe_user &lt;steam_id&gt;</span> - Unsubscribe's
+              from a user's matches.
+            </li>
+            <li>
+              <span>/list_users</span> - List all users currently subscribed to.
+            </li>
+            <li>
+              <span>/reset_guild</span> - Clear all subscriptions and settings
+              for this server.
+            </li>
           </ul>
         </div>
       </div>
@@ -110,7 +124,27 @@
           </p>
           <p><strong>Why can't I subscribe to more than 15 players?</strong></p>
           <p>
-            I'm keeping the limit low while the bot rolls out. Depending on how it performs I'll see about raising it.
+            I'm keeping the limit low while the bot rolls out. Depending on how
+            it performs I'll see about raising it.
+          </p>
+          <p>
+            <strong>
+              I played a match and it posted a long time after the match
+              completed?
+            </strong>
+          </p>
+          <p>
+            Sometimes the Dota2 match API goes down, or there are just too
+            many matches being played, and the bot falls behind on processing
+            matches. This leads to match results being posted later than
+            realtime.
+          </p>
+          <p>
+            Unfortunately I don't have a great way to catch back up without
+            dropping old matches entirely, because Steam holds you to a tight
+            rate limit of about 100 matches per 5s. The bot
+            should eventually catch up to realtime over the course of hours or days (depending
+            on how far behind it got). It is on my mind to improve this catchup behavior!
           </p>
         </div>
       </div>
