@@ -29,7 +29,7 @@ export type MatchFetcherObjectRequest =
   | { method: 'kick' }
 
 class UnretryableSteamError extends Error {
-    name = 'UnretryableSteamError'
+  name = 'UnretryableSteamError'
 }
 
 export class MatchFetcherObject implements DurableObject {
@@ -71,10 +71,10 @@ export class MatchFetcherObject implements DurableObject {
 
       // Woof loop central.
       for (const match of matches) {
-        const endInSeconds = match.duration * 1000 + match.start_time * 1000;
-        if (endInSeconds > lastFinish) {
-            lastFinish = endInSeconds
-            lastFinishId = match.match_id
+        const endInMilliseconds = match.duration * 1000 + match.start_time * 1000
+        if (endInMilliseconds > lastFinish) {
+          lastFinish = endInMilliseconds
+          lastFinishId = match.match_id
         }
         const collectedGuilds = []
 
@@ -92,7 +92,11 @@ export class MatchFetcherObject implements DurableObject {
         }
 
         // I assume these are sorted but tbh I'm not sure so I'll just keep record of highest.
-        nextSequenceNumber = Math.max(nextSequenceNumber, match.match_seq_num)
+        // The match fetch API is inclusive so always increment the sequence number on successful send.
+        nextSequenceNumber = Math.max(
+          nextSequenceNumber,
+          match.match_seq_num + 1,
+        )
       }
 
       console.log(
@@ -108,7 +112,7 @@ export class MatchFetcherObject implements DurableObject {
       if (e instanceof UnretryableSteamError) {
         // Increment to skip this match.
         console.log('Incrementing sequence number')
-        nextSequenceNumber = nextSequenceNumber + 1;
+        nextSequenceNumber = nextSequenceNumber + 1
       }
     } finally {
       this.lastFetchedSequenceNumber = nextSequenceNumber
@@ -121,7 +125,6 @@ export class MatchFetcherObject implements DurableObject {
       this.state.storage.setAlarm(Date.now() + Number(this.env.POLL_WAIT_MS))
     }
   }
-
 
   async fetchNewMatches(): Promise<DotaMatch[]> {
     console.log(`Fetching matches since ${this.lastFetchedSequenceNumber}`)
@@ -138,12 +141,14 @@ export class MatchFetcherObject implements DurableObject {
       result: { status: number; matches: DotaMatch[] }
     }
     switch (response.result.status) {
-        case 1:
-            break;
-        case 2:
-            throw new UnretryableSteamError('Found result status 2') 
-        default:
-            throw new Error(`Error status from Steam API: ${response.result.status}`);
+      case 1:
+        break
+      case 2:
+        throw new UnretryableSteamError('Found result status 2')
+      default:
+        throw new Error(
+          `Error status from Steam API: ${response.result.status}`,
+        )
     }
 
     return response.result.matches
