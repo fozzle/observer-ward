@@ -618,6 +618,16 @@ const HERO_MAP: Record<string, { id: number; emoji?: string; name: string }> = {
     id: 138,
     emoji: '<:dota_hero_muerta:1266161643159556119>',
     name: 'Muerta'
+  },
+  '131': {
+    id: 131,
+    emoji: '<:dota_hero_ringmaster:1319166388610269265>',
+    name: 'Ringmaster'
+  },
+  '145': {
+    id: 145,
+    emoji: '<:dota_hero_kez:1319166463407292426>',
+    name: 'Kez'
   }
 }
 
